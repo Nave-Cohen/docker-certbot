@@ -22,9 +22,9 @@ done
 
 # We create self-signed certs as fallback while we get actual certificates from letsencrypt,
 # as missing certs may prevent webservers from starting and thus serving the challenges.
-if [ ! -f /etc/letsencrypt/self-signed/privkey.pem ] ||  [ ! -f /etc/letsencrypt/self-signed/cert.pem ]; then
+if [ ! -f /etc/letsencrypt/$DOMAIN_MAIN/self-signed/privkey.pem ] ||  [ ! -f /etc/letsencrypt/$DOMAIN_MAIN/self-signed/cert.pem ]; then
     echo "No self-signed certificates found. Generating self-signed certificates..."
-    mkdir -p /etc/letsencrypt/self-signed
+    mkdir -p /etc/letsencrypt/$DOMAIN_MAIN/self-signed
     openssl req \
         -new \
         -newkey rsa:4096 \
@@ -32,17 +32,17 @@ if [ ! -f /etc/letsencrypt/self-signed/privkey.pem ] ||  [ ! -f /etc/letsencrypt
         -nodes \
         -x509 \
         -subj "/C=XX/ST=XXX/L=XXX/O=XXX/CN=$DOMAIN_MAIN" \
-        -keyout /etc/letsencrypt/self-signed/privkey.pem \
-        -out /etc/letsencrypt/self-signed/cert.pem
+        -keyout /etc/letsencrypt/$DOMAIN_MAIN/self-signed/privkey.pem \
+        -out /etc/letsencrypt/$DOMAIN_MAIN/self-signed/cert.pem
 else
     echo "Existing self-signed certificates found."
 fi
 
 # The pre_hook links to the self-signed certificates
-PRE_HOOK="echo "'"'"Creating links to self-signed certs"'"'" && ln -fs ./self-signed/privkey.pem /etc/letsencrypt/privkey.pem && ln -fs ./self-signed/cert.pem /etc/letsencrypt/cert.pem"
+PRE_HOOK="echo "'"'"Creating links to self-signed certs"'"'" && ln -fs ./$DOMAIN_MAIN/self-signed/privkey.pem /etc/letsencrypt/$DOMAIN_MAIN/privkey.pem && ln -fs ./$DOMAIN_MAIN/self-signed/cert.pem /etc/letsencrypt/$DOMAIN_MAIN/cert.pem"
 
 # The post_hook relinks the certificates (to replace self-signed ones) and then runs the provided HOOK
-DEPLOY_HOOK="echo "'"'"Creating links to actual certs"'"'" && ln -fs ./live/$MODE/privkey.pem /etc/letsencrypt/privkey.pem && ln -fs ./live/$MODE/fullchain.pem /etc/letsencrypt/cert.pem && $HOOK"
+DEPLOY_HOOK="echo "'"'"Creating links to actual certs"'"'" && ln -fs ./live/$DOMAIN_MAIN/privkey.pem /etc/letsencrypt/$DOMAIN_MAIN/privkey.pem && ln -fs ./live/$DOMAIN_MAIN/fullchain.pem /etc/letsencrypt/$DOMAIN_MAIN/cert.pem && $HOOK"
 
 if [ "$MODE" = "disabled" ]; then
 
@@ -53,7 +53,7 @@ if [ "$MODE" = "disabled" ]; then
 
 else
 
-    COMMAND="certbot certonly --cert-name $MODE --webroot --webroot-path /challenges --non-interactive --agree-tos -m $EMAIL $CERTBOT_DOMAINS_ARGS --pre-hook '$PRE_HOOK' --deploy-hook '$DEPLOY_HOOK'"
+    COMMAND="certbot certonly --cert-name $DOMAIN_MAIN --webroot --webroot-path /challenges --non-interactive --agree-tos -m $EMAIL $CERTBOT_DOMAINS_ARGS --pre-hook '$PRE_HOOK' --deploy-hook '$DEPLOY_HOOK'"
 
     if [ "$MODE" != "production" ]; then
         echo "YOU ARE IN STAGING MODE. Set MODE=production to generate a real certificate."
