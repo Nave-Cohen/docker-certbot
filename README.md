@@ -51,7 +51,7 @@ Set `MODE` to `production` to get real certificates (but first: check that it wo
 Set `HOOK` to the command to be run after succesful renewal. This allows to reload/restart the webservers.
 The container has access to the main docker socket and can thus run the same docker commands as the host.
 
-Configure your webserver to serve `/.well-known` from `/challenges/.well-known` and to load the certificates from `/certs/cert.pem` and `/certs/privkey.pem`.
+Configure your webserver to serve `/.well-known` from `/challenges/.well-known` and to load the certificates from `/certs/your-domain/cert.pem` and `/certs/your-domain/privkey.pem`.
 
 ### Sample config for Nginx:
 
@@ -76,8 +76,12 @@ http {
     server {
         listen          443 ssl default_server;
 
-        ssl_certificate     /certs/cert.pem;
-        ssl_certificate_key /certs/privkey.pem;
+        ssl_certificate     /certs/your-domain/cert.pem;
+        ssl_certificate_key /certs/your-domain/privkey.pem;
+
+        # Replace 'your-domain' with the first domain from your DOMAINS variable
+        # Example: ssl_certificate     /certs/example.com/cert.pem;
+        #          ssl_certificate_key /certs/example.com/privkey.pem;
 
         # Replace this section
         location / {
@@ -95,7 +99,8 @@ uwsgi \
     # port 80 must be open for the challenge
     --http 0.0.0.0:80 \
     # this is our main socket with the certificates
-    --https 0.0.0.0:443,/certs/cert.pem,/certs/privkey.pem \
+    # Replace 'your-domain' with the first domain from your DOMAINS variable
+    --https 0.0.0.0:443,/certs/your-domain/cert.pem,/certs/your-domain/privkey.pem \
     # serve the challenge
     --static-map /.well-known=/challenges/.well-known \
     # any request to /.well-known/* is served as is
